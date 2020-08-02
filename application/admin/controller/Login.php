@@ -124,13 +124,24 @@ class Login extends Base {
             $returnData = Tools::listToTree(Tools::buildArrFromObj($access));
         } else {
             $groups = AdminAuthGroupAccess::get(['uid' => $uid]);
+			
             if (isset($groups) && $groups->group_id) {
                 $access = (new AdminAuthRule())->whereIn('group_id', $groups->group_id)->select();
                 $access = array_unique(array_column(Tools::buildArrFromObj($access), 'url'));
                 array_push($access, "");
                 $menus = (new AdminMenu())->whereIn('url', $access)->where('show', 1)->order('sort', 'ASC')->select();
-                $returnData = Tools::listToTree(Tools::buildArrFromObj($menus));
-                RouterTool::buildVueRouter($returnData);
+                $returnDatas = Tools::listToTree(Tools::buildArrFromObj($menus));
+                RouterTool::buildVueRouter($returnDatas);
+				
+				if (!isset($returnDatas[0])) {
+					foreach ($returnDatas as $k => $r) {
+						$returnData[] = $r;
+					}
+					//print_r($returnData);exit;
+				}else{
+					$returnData = $returnDatas;
+				}
+				
             }
         }
         if ($uid == 0) {

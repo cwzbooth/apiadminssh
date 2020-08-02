@@ -14,6 +14,8 @@ use app\model\AdminApp;
 use app\model\AdminAppGroup;
 use app\model\AdminList;
 use app\model\AdminGroup;
+use app\model\AdminFields;
+
 use app\util\ReturnCode;
 use app\util\Tools;
 use app\util\Strs;
@@ -90,6 +92,7 @@ class User extends Base {
     public function add() {
         $groups = '';
         $postData = $this->request->post();
+		//print_r( $postData);exit;
 		
 		$obj = new AdminUser();
 		$listObj = $obj->where('username', $postData['username'])->find();
@@ -130,7 +133,8 @@ class User extends Base {
 		$dataAppGroup = array(
 			'uid' => $arr['uid'],
 			'hash' => uniqid(),
-			'description' => !empty($arr['account_name']) ? $arr['account_name'] . '网站接口管理' : '女神来了网站接口管理',
+			'siteroot' => $arr['siteroot'],
+			'description' => !empty($arr['account_des']) ? $arr['account_des'] : $arr['account_name'] . '网站接口管理',
 			'name' => !empty($arr['account_name']) ? $arr['account_name'] : "女神来了"
 		);
 		$res = AdminAppGroup::create($dataAppGroup);
@@ -142,16 +146,16 @@ class User extends Base {
 		$dataGroup = array(
 			'uid' => $arr['uid'],
 			'hash' => uniqid(),
-			'description' => !empty($arr['activity_name']) ? $arr['activity_name'] . '活动分组接口管理' :"女神来了投票活动分组接口管理",
 			'name' => !empty($arr['activity_name']) ? $arr['activity_name'] :"女神来了投票活动名称",
+			'description' => !empty($arr['activity_des']) ? $arr['activity_des'] : $arr['activity_name'] . '活动分组接口管理',
 			'apiUrl' => !empty($arr['activity_url']) ? $arr['activity_url'] :"https://wx.fmoons.com/app/index.php?i=6&c=entry&a=wxapp&m=fm_photosvote&rid=53",
-			'image' => $arr['avatar']
+			'image' => $arr['avatar'],
+			'wx_app_rid' => $arr['wx_app_rid']
 		);
 		$res = AdminGroup::create($dataGroup);
 		if ($res === false) {
 		    return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
 		}
-		
 		//3、添加默认活动接口		
 		$datalist = [
 			[
@@ -184,11 +188,14 @@ class User extends Base {
 		//print_r($postData);exit;
 		foreach ($datalist as $k => $r) {
 			$res = AdminList::create($r);
+			if ($res === false) {
+				return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
+			}
+			$this->addFields($r['hash']);
 		}
 		
-		if ($res === false) {
-		    return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
-		}
+		
+		
 		
 		//4、添加默认应用数据
 		
@@ -196,8 +203,9 @@ class User extends Base {
 		    'app_id'       => uniqid(),
 		    'app_secret'   => Strs::randString(32),
 		    'app_name'     => !empty($arr['app_name']) ? $arr['app_name'] : '女神来了',
-		    'app_info'     => !empty($arr['app_name']) ? $arr['app_name'] . '应用管理' : '女神来了应用管理',
+		    'app_info'     => !empty($arr['app_des']) ? $arr['app_des'] :  $arr['app_name'] . '应用管理',
 		    'app_group'    => $dataAppGroup['hash'],
+			'app_group_name' => $dataAppGroup['name'],
 		    'uid'    => $arr['uid'],
 		    'app_add_time' => time(),
 		    'app_api'      => '',
@@ -218,6 +226,43 @@ class User extends Base {
 		}
 	
 	    return $this->buildSuccess();
+	}
+	
+	public function addFields($hash) {
+		$datalist = [
+			[
+				'data_type'=> "9",
+				'field_name'=>  "os",
+				'show_name'=>  "os",
+				'hash'=> $hash,
+				'info'=> "",
+				'isMust'=> "1",
+				'is_must'=> "1",
+				'range'=> '{"uuid":"ugOswYycW8Q8ybQ1fvgiv5SNDPg6OJek","language":"zh-CN","model":"iphone","platform":"ios","system":"iOS 11.0","username":"幻月科技","avatar":"","create_ip":"","openid":""}',
+				'type'=> 0
+			],
+			[
+				'data_type'=> "2",
+				'default'=> "",
+				'field_name'=> "do",
+				'show_name'=> "do",
+				'hash'=> $hash,
+				'info'=> "请求接口",
+				'is_must'=> "1",
+				'range'=> "GetReply",
+				'type'=> 0
+			]
+		];
+		//print_r($postData);exit;
+		foreach ($datalist as $k => $r) {
+			$res = AdminFields::create($r);
+			if ($res === false) {
+				return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
+			}
+		}
+		
+		return true;
+			
 	}
 	
 
@@ -381,7 +426,13 @@ class User extends Base {
             return $this->buildFailed(ReturnCode::INVALID, '超级管理员不能被删除');
         }
         AdminUser::destroy($id);
+		AdminAppGroup::where('uid','=',$id)->delete();
+		AdminGroup::where('uid','=',$id)->delete();
+		AdminList::where('uid','=',$id)->delete();
+		AdminApp::where('uid','=',$id)->delete();
+		
         AdminAuthGroupAccess::destroy(['uid' => $id]);
+		
         if($oldAdmin = cache('Login:' . $id)) {
             cache('Login:' . $oldAdmin, null);
         }

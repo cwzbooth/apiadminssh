@@ -71,4 +71,5 @@ Route::rule('admin/UsersList/index', 'admin/UsersList/index', 'get')->middleware
 Route::rule('admin/usersGroup/index', 'admin/usersGroup/index', 'get')->middleware(["AdminAuth", "AdminPermission", "AdminLog", "AdminResponse"]);
 Route::rule('admin/UsersCount/index', 'admin/UsersCount/index', 'get')->middleware(["AdminAuth", "AdminPermission", "AdminLog", "AdminResponse"]);
 Route::rule('admin/Menu/refresh', 'admin/Menu/refresh', 'get')->middleware(["AdminAuth", "AdminPermission", "AdminLog", "AdminResponse"]);
+Route::rule('admin/User/getUserOne', 'admin/User/getUserOne', 'get')->middleware(["AdminAuth", "AdminPermission", "AdminLog", "AdminResponse"]);
 Route::group('admin', function() {Route::miss('admin/Miss/index');})->middleware('AdminResponse');

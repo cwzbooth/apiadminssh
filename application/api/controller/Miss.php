@@ -12,10 +12,16 @@ class Miss extends Base {
             'TpVersion' => App::version(),
             'Float'     => StrRandom::randomPhone()
         ]);
-		$hash = $this->request->get();
+		
+		$param = $this->request->param();
+		$url = getSiteroot();
+		
+		//print_r($url);
+		//print_r(request());
 
         return $this->buildSuccess([
-            'ToYou'   => "I'm glad to meet you（终于等到你！）"
+            'ToYou'   => "I'm glad to meet you（终于等到你！）",
+			'from'		=> $url
         ]);
     }
 }

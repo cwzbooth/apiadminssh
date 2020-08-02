@@ -79,7 +79,7 @@ class InterfaceList extends Base {
             return $this->buildFailed(ReturnCode::DB_SAVE_ERROR, '真实类名只允许填写字母，数字和/');
         }
 		
-		$group = $this->getGroup($postData['group_hash']);
+		$group = getInfo('AdminGroup', $postData['group_hash']);
 		$postData['group_name'] = empty($group['name']) ? '' : $group['name'] ;
 		$postData['group_apiUrl'] = empty($group['apiUrl']) ? '' : $group['apiUrl'] ;
 		$postData['uid'] = UID;
@@ -123,7 +123,7 @@ class InterfaceList extends Base {
         if (!preg_match("/^[A-Za-z0-9_\/]+$/", $postData['api_class'])) {
             return $this->buildFailed(ReturnCode::DB_SAVE_ERROR, '真实类名只允许填写字母，数字和/');
         }
-		$group = $this->getGroup($postData['group_hash']);
+		$group = getInfo('AdminGroup', $postData['group_hash']);
 		$postData['group_name'] = $group['name'];
 		$postData['group_apiUrl'] = $group['apiUrl'];
 		

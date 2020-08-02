@@ -61,8 +61,9 @@ class InterfaceGroup extends Base {
      */
     public function getAll() {
 		$obj = new AdminGroup();
-		if (UID != 1) {			
-			$obj = $obj->where('uid', UID);
+		$uid = $this->request->get('uid', 0);
+		if ($uid > 0) {			
+			$obj = $obj->where('uid', $uid);
 		}
         $listInfo = $obj->where(['status' => 1])->select();
 

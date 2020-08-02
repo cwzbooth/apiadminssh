@@ -62,8 +62,10 @@ class AppGroup extends Base {
      */
     public function getAll() {
 		$obj = new AdminAppGroup();
-		if (UID != 1) {			
-			$obj = $obj->where('uid', UID);
+		
+		$uid = $this->request->get('uid', 0);
+		if ($uid > 0) {			
+			$obj = $obj->where('uid', $uid);
 		}
         $listInfo = $obj->where(['status' => 1])->select();
 
@@ -99,6 +101,8 @@ class AppGroup extends Base {
     public function add() {
         $postData = $this->request->post();
 		$postData['uid'] = UID;
+		$postData['siteroot'] = ($postData['http']==1) ? 'https://'.$postData['siteroot'] : 'http://'.$postData['siteroot'];
+		unset($postData['http']);
         $res = AdminAppGroup::create($postData);
         if ($res === false) {
             return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
@@ -119,7 +123,9 @@ class AppGroup extends Base {
 		$listObj = $obj->where('uid', $postData['uid'])->find();
 		if (empty($listObj)) {
 			$postData['uid'] = UID;
-		}
+		}		
+		$postData['siteroot'] = ($postData['http']==1) ? 'https://'.$postData['siteroot'] : 'http://'.$postData['siteroot'];
+		unset($postData['http']);
         $res = AdminAppGroup::update($postData);
         if ($res === false) {
             return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);

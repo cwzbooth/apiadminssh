@@ -64,10 +64,10 @@ class App extends Base {
      */
     public function getAppInfo() {
         $apiArr = new AdminList();
-		
-		if (UID != 1) {			
-			$apiArr = $apiArr->where('uid', UID);
-		}
+		 $uid = $this->request->get('uid', 0);
+		//if (UID != 1) {			
+			$apiArr = $apiArr->where('uid', $uid);
+		//}
 		
         $apiArr = $apiArr->all();
 		
@@ -75,18 +75,18 @@ class App extends Base {
             $res['apiList'][$api['group_hash']][] = $api;
         }
 		$groupArr = new AdminGroup();
-		if (UID != 1) {			
-			$groupArr = $groupArr->where('uid', UID);
-		}
+		//if (UID != 1) {			
+			$groupArr = $groupArr->where('uid', $uid);
+		//}
         $groupArr =$groupArr->all();
         $groupArr = Tools::buildArrFromObj($groupArr);
         $res['groupInfo'] = array_column($groupArr, 'name', 'hash');
         $id = $this->request->get('id', 0);
         if ($id) {
 			$appInfo = new AdminApp();
-			if (UID != 1) {			
-				$appInfo = $appInfo->where('uid', UID);
-			}
+			//if (UID != 1) {			
+				$appInfo = $appInfo->where('uid', $uid);
+			//}
             $appInfo = $appInfo->get($id)->toArray();
             $res['app_detail'] = json_decode($appInfo['app_api_show'], true);
         } else {
@@ -115,12 +115,14 @@ class App extends Base {
      */
     public function add() {
         $postData = $this->request->post();
+		$group = getInfo('AdminAppGroup', $postData['app_group']);
         $data = [
             'app_id'       => $postData['app_id'],
             'app_secret'   => $postData['app_secret'],
             'app_name'     => $postData['app_name'],
             'app_info'     => $postData['app_info'],
             'app_group'    => $postData['app_group'],
+            'app_group_name'    => $group['name'],
             'uid'    => UID,
             'app_add_time' => time(),
             'app_api'      => '',
@@ -173,11 +175,13 @@ class App extends Base {
      */
     public function edit() {
         $postData = $this->request->post();
+		$group = getInfo('AdminAppGroup', $postData['app_group']);
         $data = [
             'app_secret'   => $postData['app_secret'],
             'app_name'     => $postData['app_name'],
             'app_info'     => $postData['app_info'],
             'app_group'    => $postData['app_group'],
+            'app_group_name'    => $group['name'],
             'app_api'      => '',
             'app_api_show' => ''
         ];
@@ -211,7 +215,7 @@ class App extends Base {
     }
 
     /**
-     * 删除应用
+     * 删除应用s
      * @return array
      * @author zhaoxiang <zhaoxiang051405@gmail.com>
      */
@@ -230,4 +234,5 @@ class App extends Base {
 
         return $this->buildSuccess();
     }
+	
 }

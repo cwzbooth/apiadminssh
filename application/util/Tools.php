@@ -125,7 +125,6 @@ class Tools {
     public static function listToTree($list, $pk = 'id', $pid = 'fid', $child = 'children', $root = '0') {
         $tree = array();
         if (is_array($list)) {
-            $refer = array();
             foreach ($list as $key => $data) {
                 $refer[$data[$pk]] = &$list[$key];
             }

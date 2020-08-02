@@ -132,3 +132,78 @@ function getip() {
 		return '127.0.0.1';
 	}
 }
+
+function getInfo($name, $hash) {
+	switch($name) {
+		case 'AdminAppGroup':
+			$obj = new AdminAppGroup();
+		break;
+		case 'AdminGroup':
+			$obj = new AdminGroup();
+		break;
+		case 'AdminList':
+			$obj = new AdminList();
+		break;
+		case 'AdminApp':
+			$obj = new AdminApp();
+		break;
+		
+		default:
+		break;
+	}
+	if ($name == 'AdminApp') {
+		$obj = $obj->where('app_id', $hash);
+	}else{
+		$obj = $obj->where('hash', $hash);
+	}	
+	$listObj = $obj->find();	
+	return $listObj;
+}
+
+function getSiteroot() {
+	$http = explode('//', $_SERVER['HTTP_REFERER']);
+	$url = explode('/', $http[1]);
+	$url = $http[0].'//'.$url[0].'/';
+	
+	return $url;
+}
+
+
+
+
+
+
+
+
+
+
+
+function iserializer($value) {
+	return serialize($value);
+}
+
+
+function iunserializer($value) {
+	if (empty($value)) {
+		return array();
+	}
+	if (!is_serialized($value)) {
+		return $value;
+	}
+	if(version_compare(PHP_VERSION, '7.0.0', '>=')){
+		$result = unserialize($value, array('allowed_classes' => false));
+	}else{
+		if(preg_match('/[oc]:[^:]*\d+:/i', $seried)){
+			return array();
+		}
+		$result = unserialize($value);
+	}
+	if ($result === false) {
+		$temp = preg_replace_callback('!s:(\d+):"(.*?)";!s', function ($matchs){
+			return 's:'.strlen($matchs[2]).':"'.$matchs[2].'";';
+		}, $value);
+		return unserialize($temp);
+	} else {
+		return $result;
+	}
+}
