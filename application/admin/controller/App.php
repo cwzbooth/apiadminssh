@@ -10,6 +10,7 @@ namespace app\admin\controller;
 use app\model\AdminApp;
 use app\model\AdminList;
 use app\model\AdminGroup;
+use app\model\AdminAppWeb;
 use app\util\ReturnCode;
 use app\util\Strs;
 use app\util\Tools;
@@ -41,6 +42,12 @@ class App extends Base {
                 case 2:
                     $obj = $obj->whereLike('app_name', "%{$keywords}%");
                     break;
+                case 3:
+                    $obj = $obj->whereLike('app_group', "%{$keywords}%");
+                    break;
+                case 4:
+                    $obj = $obj->where('uid', $keywords);
+                    break;
             }
         }
 		if (UID != 1) {			
@@ -48,6 +55,11 @@ class App extends Base {
 		}
 		
         $listObj = $obj->order('app_add_time', 'DESC')->paginate($limit, false, ['page' => $start])->toArray();
+		
+		foreach ($listObj['data'] as $k => $r) {
+			$listObj['data'][$k]['app_group_name'] = getInfo('AdminAppGroup', $r['app_group'], 2);
+			$listObj['data'][$k]['username'] = getInfo('AdminUser', $r['uid'], 2);
+		}
 
         return $this->buildSuccess([
             'list'  => $listObj['data'],
@@ -70,6 +82,7 @@ class App extends Base {
 		//}
 		
         $apiArr = $apiArr->all();
+		//print_r($apiArr);exit;
 		
         foreach ($apiArr as $api) {
             $res['apiList'][$api['group_hash']][] = $api;
@@ -96,6 +109,27 @@ class App extends Base {
 
         return $this->buildSuccess($res);
     }
+	
+	/**
+	 * 获取全部有效的应用
+	 * @author Fmoons
+	 * @throws \think\db\exception\DataNotFoundException
+	 * @throws \think\db\exception\ModelNotFoundException
+	 * @throws \think\exception\DbException
+	 */
+	public function getAppId() {
+		$obj = new AdminApp();
+		
+		$uid = $this->request->get('uid', 0);
+		if ($uid > 0) {			
+			$obj = $obj->where('uid', $uid);
+		}
+	    $listInfo = $obj->where(['app_status' => 1])->select();
+	
+	    return $this->buildSuccess([
+	        'list' => $listInfo
+	    ]);
+	}
 
     /**
      * 刷新APPSecret
@@ -116,6 +150,7 @@ class App extends Base {
     public function add() {
         $postData = $this->request->post();
 		$group = getInfo('AdminAppGroup', $postData['app_group']);
+		$web = getInfo('AdminAppWeb', $group['app_web']);
         $data = [
             'app_id'       => $postData['app_id'],
             'app_secret'   => $postData['app_secret'],
@@ -123,6 +158,8 @@ class App extends Base {
             'app_info'     => $postData['app_info'],
             'app_group'    => $postData['app_group'],
             'app_group_name'    => $group['name'],
+            'app_web'    => $web['hash'],
+            'app_web_name'    => $web['name'],
             'uid'    => UID,
             'app_add_time' => time(),
             'app_api'      => '',
@@ -176,12 +213,15 @@ class App extends Base {
     public function edit() {
         $postData = $this->request->post();
 		$group = getInfo('AdminAppGroup', $postData['app_group']);
+		$web = getInfo('AdminAppWeb', $group['app_web']);
         $data = [
             'app_secret'   => $postData['app_secret'],
             'app_name'     => $postData['app_name'],
             'app_info'     => $postData['app_info'],
             'app_group'    => $postData['app_group'],
             'app_group_name'    => $group['name'],
+            'app_web'    => $web['hash'],
+            'app_web_name'    => $web['name'],
             'app_api'      => '',
             'app_api_show' => ''
         ];

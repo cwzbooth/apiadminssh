@@ -19,6 +19,8 @@ use app\model\AdminList;
 use app\model\AdminGroup;
 use app\model\AdminApp;
 use app\model\AdminAppGroup;
+use app\model\AdminAppWeb;
+use app\model\AdminUser;
 /**
  *获取接口链接地址
 */
@@ -60,21 +62,24 @@ function countHits($data,$type='get',$code=1) {
 	}else{
 		$da = json_decode($data['os'],true);
 	}
-	
 	$hash = $data['API_CONF_DETAIL']['hash'];
 	$group_hash = $data['API_CONF_DETAIL']['group_hash'];
+	
 	$app_id = $data['APP_CONF_DETAIL']['app_id'];
 	$app_group = $data['APP_CONF_DETAIL']['app_group'];
+	$app_web = $data['APP_CONF_DETAIL']['app_web'];
+	$app_name = $data['APP_CONF_DETAIL']['app_name'];
 	
 	$AdminList = new AdminList();
 	
 	$da['uid'] = $AdminList->where('hash', $hash)->value('uid');
-	$da['app_name'] = $data['APP_CONF_DETAIL']['app_name'];
 	$da['api_class'] = $data['API_CONF_DETAIL']['api_class'];
 	$da['hash'] = $hash;
 	$da['group_hash'] = $group_hash;
+	$da['from_url'] = getSiteroot();
 	$da['app_id'] = $app_id;
 	$da['app_group'] = $app_group;
+	$da['app_web'] = $app_web;
 	$da['create_time'] = time();
 	$da['create_ip'] = !empty($da['create_ip']) ? $da['create_ip']: getip();
 	$da['code'] = $code;
@@ -104,6 +109,11 @@ function countHits($data,$type='get',$code=1) {
 	    return false;
 	}
 	
+	$AdminAppWeb = new AdminAppWeb();
+	$res = $AdminAppWeb->where('hash', $app_web)->setInc('hits');
+	if ($res === false) {
+	    return false;
+	}
 	
 	return true;	
 }
@@ -133,8 +143,11 @@ function getip() {
 	}
 }
 
-function getInfo($name, $hash) {
+function getInfo($name, $hash, $type = 1) {
 	switch($name) {
+		case 'AdminAppWeb':
+			$obj = new AdminAppWeb();
+		break;
 		case 'AdminAppGroup':
 			$obj = new AdminAppGroup();
 		break;
@@ -147,16 +160,32 @@ function getInfo($name, $hash) {
 		case 'AdminApp':
 			$obj = new AdminApp();
 		break;
+		case 'AdminUser':
+			$obj = new AdminUser();
+		break;
 		
 		default:
 		break;
 	}
 	if ($name == 'AdminApp') {
 		$obj = $obj->where('app_id', $hash);
+	}else if ($name == 'AdminUser') {
+		$obj = $obj->where('id', $hash);
 	}else{
 		$obj = $obj->where('hash', $hash);
-	}	
-	$listObj = $obj->find();	
+	}
+	if ($type == 2) {
+		if ($name == 'AdminApp') {
+			$listObj = $obj->value('app_name');
+		}else if ($name == 'AdminUser') {
+			$listObj = $obj->value('username');
+		}else{
+			$listObj = $obj->value('name');
+		}
+	}else {
+		$listObj = $obj->find();
+	}
+	
 	return $listObj;
 }
 

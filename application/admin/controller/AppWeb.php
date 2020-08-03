@@ -1,8 +1,8 @@
 <?php
 /**
  *
- * @since   2018-02-11
- * @author  zhaoxiang <zhaoxiang051405@gmail.com>
+ * @since   2020-08-03
+ * @author  Fmoons
  */
 
 namespace app\admin\controller;
@@ -12,10 +12,10 @@ use app\model\AdminAppGroup;
 use app\model\AdminAppWeb;
 use app\util\ReturnCode;
 
-class AppGroup extends Base {
+class AppWeb extends Base {
 
     /**
-     * 获取应用组列表
+     * 获取网站组列表
      * @return array
      * @throws \think\exception\DbException
      * @author zhaoxiang <zhaoxiang051405@gmail.com>
@@ -27,7 +27,7 @@ class AppGroup extends Base {
         $type = $this->request->get('type', '');
         $status = $this->request->get('status', '');
 
-        $obj = new AdminAppGroup();
+        $obj = new AdminAppWeb();
         if (strlen($status)) {
             $obj = $obj->where('status', $status);
         }
@@ -41,23 +41,12 @@ class AppGroup extends Base {
                 case 2:
                     $obj = $obj->whereLike('name', "%{$keywords}%");
                     break;
-                case 3:
-                    $obj = $obj->whereLike('app_web', "%{$keywords}%");
-                    break;
-                case 4:
-                    $obj = $obj->where('uid', $keywords);
-                    break;
             }
         }
 		if (UID != 1) {			
 			$obj = $obj->where('uid', UID);
 		}
         $listObj = $obj->paginate($limit, false, ['page' => $start])->toArray();
-		
-		foreach ($listObj['data'] as $k => $r) {
-			$listObj['data'][$k]['app_web_name'] = getInfo('AdminAppWeb', $r['app_web'], 2);
-			$listObj['data'][$k]['username'] = getInfo('AdminUser', $r['uid'], 2);
-		}
 
         return $this->buildSuccess([
             'list'  => $listObj['data'],
@@ -66,33 +55,13 @@ class AppGroup extends Base {
     }
 
     /**
-     * 获取全部有效的应用组
+     * 获取全部有效的网站组
      * @author zhaoxiang <zhaoxiang051405@gmail.com>
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\ModelNotFoundException
      * @throws \think\exception\DbException
      */
     public function getAll() {
-		$obj = new AdminAppGroup();
-		
-		$uid = $this->request->get('uid', 0);
-		if ($uid > 0) {			
-			$obj = $obj->where('uid', $uid);
-		}
-        $listInfo = $obj->where(['status' => 1])->select();
-
-        return $this->buildSuccess([
-            'list' => $listInfo
-        ]);
-    }
-    /**
-     * 获取全部有效的网站组
-     * @author Fmoons
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\ModelNotFoundException
-     * @throws \think\exception\DbException
-     */
-    public function getWeb() {
 		$obj = new AdminAppWeb();
 		
 		$uid = $this->request->get('uid', 0);
@@ -107,14 +76,14 @@ class AppGroup extends Base {
     }
 
     /**
-     * 应用组状态编辑
+     * 网站组状态编辑
      * @return array
      * @author zhaoxiang <zhaoxiang051405@gmail.com>
      */
     public function changeStatus() {
         $id = $this->request->get('id');
         $status = $this->request->get('status');
-        $res = AdminAppGroup::update([
+        $res = AdminAppWeb::update([
             'id'     => $id,
             'status' => $status
         ]);
@@ -126,19 +95,23 @@ class AppGroup extends Base {
     }
 
     /**
-     * 添加应用组
+     * 添加网站组
      * @author zhaoxiang <zhaoxiang051405@gmail.com>
      * @return array
      */
     public function add() {
         $postData = $this->request->post();
 		$postData['uid'] = UID;
-		unset($postData['http']);
+		$obj = new AdminAppWeb();
 		
-		$web = getInfo('AdminAppWeb', $postData['app_web']);
-		$postData['app_web_name'] = $web['name'];
-		$postData['siteroot'] = $web['siteroot'];
-        $res = AdminAppWeb::create($postData);
+		$web = $obj->where(['siteroot' => $postData['siteroot']])->find();
+		if (!empty($web)) {
+			 return $this->buildFailed(ReturnCode::DATA_EXISTS, '网站地址已经存在，请重新填写');
+		}
+		
+		$postData['siteroot'] = ($postData['http']==1) ? 'https://'.$postData['siteroot'] : 'http://'.$postData['siteroot'];
+		unset($postData['http']);
+        $res = $obj->create($postData);
         if ($res === false) {
             return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
         }
@@ -147,23 +120,28 @@ class AppGroup extends Base {
     }
 
     /**
-     * 应用组编辑
+     * 网站组编辑
      * @author zhaoxiang <zhaoxiang051405@gmail.com>
      * @return array
      */
     public function edit() {
         $postData = $this->request->post();
 		
-		$obj = new AdminAppGroup();
+		$obj = new AdminAppWeb();
 		$listObj = $obj->where('uid', $postData['uid'])->find();
 		if (empty($listObj)) {
 			$postData['uid'] = UID;
+		}		
+		
+		$siteroot = $obj->where('id','<>', $postData['id'])->where('siteroot','=', $postData['siteroot'])->find();
+		
+		if (!empty($siteroot)) {
+			 return $this->buildFailed(ReturnCode::DATA_EXISTS, '网站地址已经存在，请重新填写');
 		}
+			
+		
 		unset($postData['http']);
-		$web = getInfo('AdminAppWeb', $postData['app_web']);
-		$postData['app_web_name'] = $web['name'];
-		$postData['siteroot'] = $web['siteroot'];
-        $res = AdminAppGroup::update($postData);
+        $res = $obj->update($postData);
         if ($res === false) {
             return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
         }
@@ -172,7 +150,7 @@ class AppGroup extends Base {
     }
 
     /**
-     * 应用组删除
+     * 网站组删除
      * @author zhaoxiang <zhaoxiang051405@gmail.com>
      * @return array
      */
@@ -187,7 +165,7 @@ class AppGroup extends Base {
             return $this->buildFailed(ReturnCode::EMPTY_PARAMS, '当前分组存在' . $has . '个应用，禁止删除');
         }
 
-        AdminAppGroup::destroy(['hash' => $hash]);
+        AdminAppWeb::destroy(['hash' => $hash]);
 
         return $this->buildSuccess();
     }

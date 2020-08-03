@@ -129,12 +129,28 @@ class User extends Base {
 	 */
 	public function addDefault($arr) {
 		
+		
+		//0、添加默认网站数据
+		$dataAppWeb = array(
+			'uid' => $arr['uid'],
+			'hash' => uniqid(),
+			'siteroot' => $arr['siteroot'],
+			'description' => !empty($arr['web_des']) ? $arr['web_des'] : $arr['web_name'] . '网站接口管理',
+			'name' => !empty($arr['web_name']) ? $arr['web_name'] : "女神来了"
+		);
+		$res = AdminAppWeb::create($dataAppWeb);
+		if ($res === false) {
+		    return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
+		}
+		
+		$web = getInfo('AdminAppWeb', $postData['app_web']);
 		//1、添加默认应用组数据
 		$dataAppGroup = array(
 			'uid' => $arr['uid'],
 			'hash' => uniqid(),
 			'siteroot' => $arr['siteroot'],
-			'description' => !empty($arr['account_des']) ? $arr['account_des'] : $arr['account_name'] . '网站接口管理',
+			'app_web_name' => $dataAppWeb['name'],
+			'description' => !empty($arr['account_des']) ? $arr['account_des'] : $arr['account_name'] . '应用组接口管理',
 			'name' => !empty($arr['account_name']) ? $arr['account_name'] : "女神来了"
 		);
 		$res = AdminAppGroup::create($dataAppGroup);
@@ -150,7 +166,7 @@ class User extends Base {
 			'description' => !empty($arr['activity_des']) ? $arr['activity_des'] : $arr['activity_name'] . '活动分组接口管理',
 			'apiUrl' => !empty($arr['activity_url']) ? $arr['activity_url'] :"https://wx.fmoons.com/app/index.php?i=6&c=entry&a=wxapp&m=fm_photosvote&rid=53",
 			'image' => $arr['avatar'],
-			'wx_app_rid' => $arr['wx_app_rid']
+			'wxapp_rid' => $arr['wxapp_rid']
 		);
 		$res = AdminGroup::create($dataGroup);
 		if ($res === false) {
@@ -200,12 +216,14 @@ class User extends Base {
 		//4、添加默认应用数据
 		
 		$dataApp = [
-		    'app_id'       => uniqid(),
+		    'app_id'       => mt_rand(1, 9) . Strs::randString(7, 1),
 		    'app_secret'   => Strs::randString(32),
 		    'app_name'     => !empty($arr['app_name']) ? $arr['app_name'] : '女神来了',
 		    'app_info'     => !empty($arr['app_des']) ? $arr['app_des'] :  $arr['app_name'] . '应用管理',
 		    'app_group'    => $dataAppGroup['hash'],
 			'app_group_name' => $dataAppGroup['name'],
+		    'app_web'    => $dataAppWeb['hash'],
+			'app_web_name' => $dataAppWeb['name'],
 		    'uid'    => $arr['uid'],
 		    'app_add_time' => time(),
 		    'app_api'      => '',

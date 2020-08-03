@@ -39,13 +39,22 @@ class InterfaceGroup extends Base {
                 case 2:
                     $obj = $obj->whereLike('name', "%{$keywords}%");
                     break;
+                case 3:
+                    $obj = $obj->whereLike('app_id', "%{$keywords}%");
+                    break;
+                case 4:
+                    $obj = $obj->where('uid', $keywords);
+                    break;
             }
         }
 		if (UID != 1) {			
 			$obj = $obj->where('uid', UID);
 		}
         $listObj = $obj->order('create_time', 'desc')->paginate($limit, false, ['page' => $start])->toArray();
-
+		foreach ($listObj['data'] as $k => $r) {
+			$listObj['data'][$k]['app_name'] = getInfo('AdminApp', $r['app_id'], 2);
+			$listObj['data'][$k]['username'] = getInfo('AdminUser', $r['uid'], 2);
+		}
         return $this->buildSuccess([
             'list'  => $listObj['data'],
             'count' => $listObj['total']
@@ -99,6 +108,11 @@ class InterfaceGroup extends Base {
     public function add() {
         $postData = $this->request->post();
 		$postData['uid'] = UID;
+		
+		$app = getInfo('AdminApp', $postData['app_id']);
+		$postData['app_name'] = $app['app_name'];
+		$postData['app_secret'] = $app['app_secret'];
+		
         $res = AdminGroup::create($postData);
         if ($res === false) {
             return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
@@ -120,6 +134,10 @@ class InterfaceGroup extends Base {
 		if (empty($listObj)) {
 			$postData['uid'] = UID;
 		}
+		
+		$app = getInfo('AdminApp', $postData['app_id']);
+		$postData['app_name'] = $app['app_name'];
+		$postData['app_secret'] = $app['app_secret'];
 		
         $res = AdminGroup::update($postData);
         if ($res === false) {
