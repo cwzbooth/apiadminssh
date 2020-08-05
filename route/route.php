@@ -80,4 +80,5 @@ Route::rule('admin/AppWeb/changeStatus', 'admin/AppWeb/changeStatus', 'get')->mi
 Route::rule('admin/AppWeb/index', 'admin/AppWeb/index', 'get')->middleware(["AdminAuth", "AdminPermission", "AdminLog", "AdminResponse"]);
 Route::rule('admin/AppGroup/getWeb', 'admin/AppGroup/getWeb', 'get')->middleware(["AdminAuth", "AdminPermission", "AdminLog", "AdminResponse"]);
 Route::rule('admin/App/getAppId', 'admin/App/getAppId', 'get')->middleware(["AdminAuth", "AdminPermission", "AdminLog", "AdminResponse"]);
+Route::rule('admin/Home/getInforCardData', 'admin/Home/getInforCardData', 'get')->middleware(["AdminAuth", "AdminPermission", "AdminLog", "AdminResponse"]);
 Route::group('admin', function() {Route::miss('admin/Miss/index');})->middleware('AdminResponse');

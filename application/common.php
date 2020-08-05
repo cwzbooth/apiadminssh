@@ -21,6 +21,8 @@ use app\model\AdminApp;
 use app\model\AdminAppGroup;
 use app\model\AdminAppWeb;
 use app\model\AdminUser;
+use app\model\AdminHome;
+
 /**
  *获取接口链接地址
 */
@@ -122,6 +124,11 @@ function countHits($data,$type='get',$code=1) {
 	if ($res === false) {
 	    return false;
 	}
+	$AdminHome = new AdminHome();
+	$res = $AdminHome->where('id', 1)->setInc('hits');
+	if ($res === false) {
+	    return false;
+	}
 	
 	return true;	
 }
@@ -139,10 +146,22 @@ function countNums($uid, $name, $hash=[], $type = 'inc') {
 	
 	
 	switch($name) {
+		case 'AdminUser':
+			if ($type == 'dec') {
+				$res =(new AdminHome())->where('id', 1)->setDec('num_users');
+			}else{
+				$res =(new AdminHome())->where('id', 1)->setInc('num_users');
+			}
+			if ($res === false) {
+			    return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
+			}
+		break;
 		case 'AdminAppWeb':
 			if ($type == 'dec') {
+				$res =(new AdminHome())->where('id', 1)->setDec('num_app_web');
 				$res =(new AdminUser())->where('id', $uid)->setDec('num_app_web');
 			}else{
+				$res =(new AdminHome())->where('id', 1)->setInc('num_app_web');
 				$res =(new AdminUser())->where('id', $uid)->setInc('num_app_web');
 			}
 			if ($res === false) {
@@ -151,9 +170,11 @@ function countNums($uid, $name, $hash=[], $type = 'inc') {
 		break;
 		case 'AdminAppGroup':
 			if ($type == 'dec') {
+				$res =(new AdminHome())->where('id', 1)->setDec('num_app_web');
 				$res =(new AdminUser())->where('id', $uid)->setDec('num_app_web');
 				$res = (new AdminAppWeb())->where('hash', $app_web)->setDec('num_app_group');
 			}else{
+				$res =(new AdminHome())->where('id', 1)->setInc('num_app_web');
 				$res =(new AdminUser())->where('id', $uid)->setInc('num_app_web');
 				$res = (new AdminAppWeb())->where('hash', $app_web)->setInc('num_app_group');
 			}
@@ -165,12 +186,14 @@ function countNums($uid, $name, $hash=[], $type = 'inc') {
 		break;
 		case 'AdminApp':
 			if ($type == 'dec') {
-				$res =(new AdminUser())->where('id', $uid)->setDec('num_app_web');
+				$res =(new AdminHome())->where('id', 1)->setDec('num_app');
+				$res =(new AdminUser())->where('id', $uid)->setDec('num_app');
 				$res = (new AdminAppWeb())->where('hash', $app_web)->setDec('num_app');
 				$res = (new AdminAppGroup())->where('hash', $app_group)->setDec('num_app');
 				
 			}else{
-				$res =(new AdminUser())->where('id', $uid)->setInc('num_app_web');
+				$res =(new AdminHome())->where('id', 1)->setInc('num_app');
+				$res =(new AdminUser())->where('id', $uid)->setInc('num_app');
 				$res = (new AdminAppWeb())->where('hash', $app_web)->setInc('num_app');
 				$res = (new AdminAppGroup())->where('hash', $app_group)->setInc('num_app');
 				
@@ -182,12 +205,14 @@ function countNums($uid, $name, $hash=[], $type = 'inc') {
 		break;
 		case 'AdminGroup':
 			if ($type == 'dec') {
-				$res =(new AdminUser())->where('id', $uid)->setDec('num_app_web');
+				$res =(new AdminHome())->where('id', 1)->setDec('num_interface_group');
+				$res =(new AdminUser())->where('id', $uid)->setDec('num_interface_group');
 				$res = (new AdminAppWeb())->where('hash', $app_web)->setDec('num_interface_group');
 				$res = (new AdminAppGroup())->where('hash', $app_group)->setDec('num_interface_group');
 				$res = (new AdminApp())->where('app_id', $app_id)->setDec('num_interface_group');
 			}else{
-				$res =(new AdminUser())->where('id', $uid)->setInc('num_app_web');
+				$res =(new AdminHome())->where('id', 1)->setInc('num_interface_group');
+				$res =(new AdminUser())->where('id', $uid)->setInc('num_interface_group');
 				$res = (new AdminAppWeb())->where('hash', $app_web)->setInc('num_interface_group');
 				$res = (new AdminAppGroup())->where('hash', $app_group)->setInc('num_interface_group');
 				$res = (new AdminApp())->where('app_id', $app_id)->setInc('num_interface_group');
@@ -200,14 +225,16 @@ function countNums($uid, $name, $hash=[], $type = 'inc') {
 			
 		break;
 		case 'AdminList':
-			if ($type == 'dec') {				
-				$res =(new AdminUser())->where('id', $uid)->setDec('num_app_web');
+			if ($type == 'dec') {		
+				$res =(new AdminHome())->where('id', 1)->setDec('num_interface');		
+				$res =(new AdminUser())->where('id', $uid)->setDec('num_interface');
 				$res = (new AdminAppWeb())->where('hash', $app_web)->setDec('num_interface');
 				$res = (new AdminAppGroup())->where('hash', $app_group)->setDec('num_interface');
 				$res = (new AdminApp())->where('app_id', $app_id)->setDec('num_interface');			
 				$res = (new AdminGroup())->where('hash', $group_hash)->setDec('num_interface');
 			}else{				
-				$res =(new AdminUser())->where('id', $uid)->setInc('num_app_web');
+				$res =(new AdminHome())->where('id', 1)->setInc('num_interface');
+				$res =(new AdminUser())->where('id', $uid)->setInc('num_interface');
 				$res = (new AdminAppWeb())->where('hash', $app_web)->setInc('num_interface');
 				$res = (new AdminAppGroup())->where('hash', $app_group)->setInc('num_interface');
 				$res = (new AdminApp())->where('app_id', $app_id)->setInc('num_interface');			

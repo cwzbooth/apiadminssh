@@ -23,6 +23,7 @@ class Count extends Base {
         $start = $this->request->get('page', 1);
         $type = $this->request->get('type', '');
         $keywords = $this->request->get('keywords', '');
+        $hash = $this->request->get('hash', '');
         $obj = new AdminCount();
         if ($type) {
             switch ($type) {
@@ -46,7 +47,12 @@ class Count extends Base {
                     break;
             }
         }
-        $listObj = $obj->where('uid', UID)->order('create_time', 'DESC')->paginate($limit, false, ['page' => $start])->toArray();
+		if ($hash) {
+			 $obj = $obj->where('hash', $hash);
+			 $u = getInfo('AdminList', $hash);
+			 $obj->where('uid', $u['uid']);
+		}
+        $listObj = $obj->order('create_time', 'DESC')->paginate($limit, false, ['page' => $start])->toArray();
 
         return $this->buildSuccess([
             'list'  => $listObj['data'],

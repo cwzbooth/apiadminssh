@@ -16,6 +16,9 @@ use app\model\AdminAppWeb;
 use app\model\AdminList;
 use app\model\AdminGroup;
 use app\model\AdminFields;
+use app\model\AdminHome;
+
+
 
 use app\util\ReturnCode;
 use app\util\Tools;
@@ -119,6 +122,8 @@ class User extends Base {
         ]);
 		$postData['uid'] = $res->id;
 		$this->addDefault($postData);
+		
+		countNums($postData['uid'], 'AdminUser');
 
         return $this->buildSuccess();
     }
@@ -258,6 +263,7 @@ class User extends Base {
 		
 		//5、更新统计数据
 		$data = [
+			'num_users' => ['inc', 1],
 			'num_app_web' => ['inc', 1],
 			'num_app_group' => ['inc', 1],
 			'num_app' => ['inc', 1],
@@ -265,6 +271,10 @@ class User extends Base {
 			'num_interface' => ['inc', 2]
 		];
 		
+		$res =(new AdminHome())->save($data,['id'=> 1]);
+		if ($res === false) {
+		    return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
+		}
 		$res =(new AdminUser())->save($data,['id'=> $arr['uid']]);
 		if ($res === false) {
 		    return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
@@ -531,6 +541,9 @@ class User extends Base {
 		AdminApp::where('uid','=',$id)->delete();
 		
         AdminAuthGroupAccess::destroy(['uid' => $id]);
+		
+		
+		countNums($id, 'AdminUser', [], 'dec');
 		
         if($oldAdmin = cache('Login:' . $id)) {
             cache('Login:' . $oldAdmin, null);
