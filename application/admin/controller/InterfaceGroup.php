@@ -70,10 +70,18 @@ class InterfaceGroup extends Base {
      */
     public function getAll() {
 		$obj = new AdminGroup();
-		$uid = $this->request->get('uid', 0);
-		if ($uid > 0) {			
-			$obj = $obj->where('uid', $uid);
+		if (UID == 1) {
+			$uid = $this->request->get('uid', 0);
+			if ($uid > 0) {			
+				$obj = $obj->where('uid', $uid);
+			}else{
+				$obj = $obj->where('uid', UID);
+			}
+		}else{
+			$obj = $obj->where('uid', UID);
 		}
+		
+		
         $listInfo = $obj->where(['status' => 1])->select();
 
         return $this->buildSuccess([
@@ -117,7 +125,9 @@ class InterfaceGroup extends Base {
         if ($res === false) {
             return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
         }
-
+	
+		$obj = getInfo('AdminApp', $postData['app_id']);
+		countNums($obj['uid'], 'AdminGroup', ['app_web' => $obj['app_web'], 'app_group' => $obj['app_group'], 'app_id' => $postData['app_id']]);
         return $this->buildSuccess();
     }
 
@@ -161,6 +171,10 @@ class InterfaceGroup extends Base {
         if ($hash === 'default') {
             return $this->buildFailed(ReturnCode::INVALID, '系统预留关键数据，禁止删除！');
         }
+        $has = (new AdminList())->where(['group_hash' => $hash])->count();
+        if ($has) {
+            return $this->buildFailed(ReturnCode::EMPTY_PARAMS, '当前分组存在' . $has . '个接口，禁止删除');
+        }
 
         AdminList::update(['group_hash' => 'default'], ['group_hash' => $hash]);
 
@@ -182,9 +196,12 @@ class InterfaceGroup extends Base {
                 $rule->save();
             }
         }
-
+		$objGroup = (new AdminGroup())->where(['hash' => $hash])->find();		
+		$obj = getInfo('AdminApp', $objGroup['app_id']);
+		
         AdminGroup::destroy(['hash' => $hash]);
 
+		countNums($obj['uid'], 'AdminGroup', ['app_web' => $obj['app_web'], 'app_group' => $obj['app_group'], 'app_id' => $objGroup['app_id']], 'dec');
         return $this->buildSuccess();
     }
 }

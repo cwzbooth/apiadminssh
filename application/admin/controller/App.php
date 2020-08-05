@@ -120,9 +120,15 @@ class App extends Base {
 	public function getAppId() {
 		$obj = new AdminApp();
 		
-		$uid = $this->request->get('uid', 0);
-		if ($uid > 0) {			
-			$obj = $obj->where('uid', $uid);
+		if (UID == 1) {
+			$uid = $this->request->get('uid', 0);
+			if ($uid > 0) {			
+				$obj = $obj->where('uid', $uid);
+			}else{
+				$obj = $obj->where('uid', UID);
+			}
+		}else{
+			$obj = $obj->where('uid', UID);
 		}
 	    $listInfo = $obj->where(['app_status' => 1])->select();
 	
@@ -177,6 +183,8 @@ class App extends Base {
         if ($res === false) {
             return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
         }
+		
+		countNums($group['uid'], 'AdminApp', ['app_web' => $group['app_web'], 'app_group' => $postData['app_group']]);
 
         return $this->buildSuccess();
     }
@@ -265,12 +273,20 @@ class App extends Base {
             return $this->buildFailed(ReturnCode::EMPTY_PARAMS, '缺少必要参数');
         }
         $appInfo = AdminApp::get($id);
+		$has = (new AdminGroup())->where(['app_id' => $appInfo['app_id']])->count();
+		if ($has) {
+		    return $this->buildFailed(ReturnCode::EMPTY_PARAMS, '当前分组存在' . $has . '个接口组，禁止删除');
+		}
+		
         cache('AccessToken:Easy:' . $appInfo['app_secret'], null);
 
         AdminApp::destroy($id);
+		
+		countNums($appInfo['uid'], 'AdminApp', ['app_web' => $appInfo['app_web'], 'app_group' => $appInfo['app_group']], 'dec');
         if($oldWiki = cache('WikiLogin:' . $id)) {
             cache('WikiLogin:' . $oldWiki, null);
         }
+		
 
         return $this->buildSuccess();
     }

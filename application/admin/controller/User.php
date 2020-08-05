@@ -12,6 +12,7 @@ use app\model\AdminUser;
 use app\model\AdminUserData;
 use app\model\AdminApp;
 use app\model\AdminAppGroup;
+use app\model\AdminAppWeb;
 use app\model\AdminList;
 use app\model\AdminGroup;
 use app\model\AdminFields;
@@ -143,12 +144,12 @@ class User extends Base {
 		    return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
 		}
 		
-		$web = getInfo('AdminAppWeb', $postData['app_web']);
 		//1、添加默认应用组数据
 		$dataAppGroup = array(
 			'uid' => $arr['uid'],
 			'hash' => uniqid(),
 			'siteroot' => $arr['siteroot'],
+			'app_web' => $dataAppWeb['hash'],
 			'app_web_name' => $dataAppWeb['name'],
 			'description' => !empty($arr['account_des']) ? $arr['account_des'] : $arr['account_name'] . '应用组接口管理',
 			'name' => !empty($arr['account_name']) ? $arr['account_name'] : "女神来了"
@@ -242,6 +243,53 @@ class User extends Base {
 		if ($res === false) {
 		    return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
 		}
+		
+		//5、更新接口组
+		$dataUpdeteGroup = array(
+			'app_name' => $dataApp['app_name'],
+			'app_id' => $dataApp['app_id'],
+			'app_secret' => $dataApp['app_secret']
+		);
+		
+		$res = AdminGroup::update($dataUpdeteGroup, ['hash' => $dataGroup['hash']]);
+		if ($res === false) {
+		    return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
+		}
+		
+		//5、更新统计数据
+		$data = [
+			'num_app_web' => ['inc', 1],
+			'num_app_group' => ['inc', 1],
+			'num_app' => ['inc', 1],
+			'num_interface_group' => ['inc', 1],
+			'num_interface' => ['inc', 2]
+		];
+		
+		$res =(new AdminUser())->save($data,['id'=> $arr['uid']]);
+		if ($res === false) {
+		    return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
+		}
+		$res =(new AdminAppWeb())->save($data,['hash'=> $dataAppWeb['hash']]);
+		if ($res === false) {
+		    return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
+		}
+		unset($data['num_app_group']);
+		$res = (new AdminAppGroup())->save($data,['hash'=> $dataAppGroup['hash']]);
+		if ($res === false) {
+		    return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
+		}
+		unset($data['num_app']);
+		$res = (new AdminApp())->save($data,['app_id'=> $dataApp['app_id']]);
+		if ($res === false) {
+		    return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
+		}
+		unset($data['num_interface_group']);
+		$res = (new AdminGroup())->save($data,['hash'=> $dataGroup['hash']]);
+		if ($res === false) {
+		    return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
+		}
+		
+		
 	
 	    return $this->buildSuccess();
 	}
@@ -272,12 +320,17 @@ class User extends Base {
 			]
 		];
 		//print_r($postData);exit;
-		foreach ($datalist as $k => $r) {
+		$obj = new AdminFields();
+		$res = $obj->saveAll($datalist);
+		if ($res === false) {
+			return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
+		}
+		/**foreach ($datalist as $k => $r) {
 			$res = AdminFields::create($r);
 			if ($res === false) {
 				return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
 			}
-		}
+		}**/
 		
 		return true;
 			
@@ -443,7 +496,35 @@ class User extends Base {
         if ($isAdmin) {
             return $this->buildFailed(ReturnCode::INVALID, '超级管理员不能被删除');
         }
+		
+		$hasAdminAppWeb = (new AdminAppWeb())->where(['uid' => $id])->count();
+		$hasAdminAppGroup = (new AdminAppGroup())->where(['uid' => $id])->count();
+		$hasAdminApp = (new AdminApp())->where(['uid' => $id])->count();
+		$hasAdminGroup = (new AdminGroup())->where(['uid' => $id])->count();
+		$hasAdminList = (new AdminList())->where(['uid' => $id])->count();
+		$msg = '';
+		if ($hasAdminAppWeb) {
+			$msg .= '当前用户存在 ' . $hasAdminAppWeb . ' 个网站，禁止删除<br />';
+		}
+		if ($hasAdminAppWeb) {
+			$msg .= '当前用户存在 ' . $hasAdminAppGroup . ' 个应用组，禁止删除<br />';
+		}
+		if ($hasAdminAppWeb) {
+			$msg .= '当前用户存在 ' . $hasAdminApp . ' 个应用，禁止删除<br />';
+		}
+		if ($hasAdminAppWeb) {
+			$msg .= '当前用户存在 ' . $hasAdminGroup . ' 个接口组，禁止删除<br />';
+		}
+		if ($hasAdminAppWeb) {
+			$msg .= '当前用户存在 ' . $hasAdminList . ' 个接口，禁止删除<br />';
+		}
+		if (!empty($msg)) {
+		    return $this->buildFailed(ReturnCode::EMPTY_PARAMS, $msg);
+		}
+		
+		
         AdminUser::destroy($id);
+		AdminAppWeb::where('uid','=',$id)->delete();
 		AdminAppGroup::where('uid','=',$id)->delete();
 		AdminGroup::where('uid','=',$id)->delete();
 		AdminList::where('uid','=',$id)->delete();

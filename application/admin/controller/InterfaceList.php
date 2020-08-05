@@ -51,6 +51,10 @@ class InterfaceList extends Base {
 		}
         $listObj = $obj->order('id', 'DESC')->paginate($limit, false, ['page' => $start])->toArray();
 
+		foreach ($listObj['data'] as $k => $r) {
+			$listObj['data'][$k]['group_name'] = getInfo('AdminGroup', $r['group_hash'], 2);
+			$listObj['data'][$k]['username'] = getInfo('AdminUser', $r['uid'], 2);
+		}
         return $this->buildSuccess([
             'list'  => $listObj['data'],
             'count' => $listObj['total']
@@ -89,6 +93,8 @@ class InterfaceList extends Base {
             return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
         }
 
+		$obj = getInfo('AdminApp', $group['app_id']);
+		countNums($obj['uid'], 'AdminList', ['app_web' => $obj['app_web'], 'app_group' => $obj['app_group'], 'app_id' => $group['app_id'], 'group_hash' => $group['hash']]);
         return $this->buildSuccess();
     }
 
@@ -108,6 +114,7 @@ class InterfaceList extends Base {
         if ($res === false) {
             return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
         }
+		
         cache('ApiInfo:' . $hash, null);
 
         return $this->buildSuccess();
@@ -157,7 +164,7 @@ class InterfaceList extends Base {
             'app_api' => ['like', "%$hash%"]
         ]);
         if ($hashRule) {
-            $oldInfo = AdminList::get(['hash' => $hash]);
+			$oldInfo = AdminList::get(['hash' => $hash]);
             foreach ($hashRule as $rule) {
                 $appApiArr = explode(',', $rule->app_api);
                 $appApiIndex = array_search($hash, $appApiArr);
@@ -175,8 +182,16 @@ class InterfaceList extends Base {
             }
         }
 
+		
+		$objList = (new AdminList())->where(['hash' => $hash])->find();
+		$objGroup = (new AdminGroup())->where(['hash' => $objList['group_hash']])->find();		
+		$obj = getInfo('AdminApp', $objGroup['app_id']);
+		
         AdminList::destroy(['hash' => $hash]);
         AdminFields::destroy(['hash' => $hash]);
+		
+		
+		countNums($obj['uid'], 'AdminList', ['app_web' => $obj['app_web'], 'app_group' => $obj['app_group'], 'app_id' => $obj['app_id'], 'group_hash' => $objGroup['hash']], 'dec');
 
         cache('ApiInfo:' . $hash, null);
 
@@ -214,9 +229,18 @@ class InterfaceList extends Base {
 
 	public function getGroup($hash) {	
 	    $obj = new AdminGroup();
-		if (UID != 1) {			
+		if (UID == 1) {
+			$uid = $this->request->get('uid', 0);
+			if ($uid > 0) {			
+				$obj = $obj->where('uid', $uid);
+			}else{
+				$obj = $obj->where('uid', UID);
+			}
+		}else{
 			$obj = $obj->where('uid', UID);
 		}
+		
+		
 	    $obj = $obj->where('hash', $hash);	   
 	    $listObj = $obj->find();	
 	    return $listObj;

@@ -52,7 +52,7 @@ class AppGroup extends Base {
 		if (UID != 1) {			
 			$obj = $obj->where('uid', UID);
 		}
-        $listObj = $obj->paginate($limit, false, ['page' => $start])->toArray();
+        $listObj = $obj->order('id', 'DESC')->paginate($limit, false, ['page' => $start])->toArray();
 		
 		foreach ($listObj['data'] as $k => $r) {
 			$listObj['data'][$k]['app_web_name'] = getInfo('AdminAppWeb', $r['app_web'], 2);
@@ -75,9 +75,15 @@ class AppGroup extends Base {
     public function getAll() {
 		$obj = new AdminAppGroup();
 		
-		$uid = $this->request->get('uid', 0);
-		if ($uid > 0) {			
-			$obj = $obj->where('uid', $uid);
+		if (UID == 1) {
+			$uid = $this->request->get('uid', 0);
+			if ($uid > 0) {			
+				$obj = $obj->where('uid', $uid);
+			}else{
+				$obj = $obj->where('uid', UID);
+			}
+		}else{
+			$obj = $obj->where('uid', UID);
 		}
         $listInfo = $obj->where(['status' => 1])->select();
 
@@ -94,10 +100,15 @@ class AppGroup extends Base {
      */
     public function getWeb() {
 		$obj = new AdminAppWeb();
-		
-		$uid = $this->request->get('uid', 0);
-		if ($uid > 0) {			
-			$obj = $obj->where('uid', $uid);
+		if (UID == 1) {
+			$uid = $this->request->get('uid', 0);
+			if ($uid > 0) {			
+				$obj = $obj->where('uid', $uid);
+			}else{
+				$obj = $obj->where('uid', UID);
+			}
+		}else{
+			$obj = $obj->where('uid', UID);
 		}
         $listInfo = $obj->where(['status' => 1])->select();
 
@@ -138,11 +149,11 @@ class AppGroup extends Base {
 		$web = getInfo('AdminAppWeb', $postData['app_web']);
 		$postData['app_web_name'] = $web['name'];
 		$postData['siteroot'] = $web['siteroot'];
-        $res = AdminAppWeb::create($postData);
+        $res = AdminAppGroup::create($postData);
         if ($res === false) {
             return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
         }
-
+		countNums($web['uid'], 'AdminAppGroup', ['app_web' => $postData['app_web']]);
         return $this->buildSuccess();
     }
 
@@ -186,8 +197,13 @@ class AppGroup extends Base {
         if ($has) {
             return $this->buildFailed(ReturnCode::EMPTY_PARAMS, '当前分组存在' . $has . '个应用，禁止删除');
         }
+		
+		$obj = (new AdminAppGroup())->where(['hash' => $hash])->find();
 
         AdminAppGroup::destroy(['hash' => $hash]);
+		
+		
+		countNums($obj['uid'], 'AdminAppGroup', ['app_web' => $obj['app_web']], 'dec');
 
         return $this->buildSuccess();
     }

@@ -46,7 +46,7 @@ class AppWeb extends Base {
 		if (UID != 1) {			
 			$obj = $obj->where('uid', UID);
 		}
-        $listObj = $obj->paginate($limit, false, ['page' => $start])->toArray();
+        $listObj = $obj->order('id', 'DESC')->paginate($limit, false, ['page' => $start])->toArray();
 
         return $this->buildSuccess([
             'list'  => $listObj['data'],
@@ -64,9 +64,15 @@ class AppWeb extends Base {
     public function getAll() {
 		$obj = new AdminAppWeb();
 		
-		$uid = $this->request->get('uid', 0);
-		if ($uid > 0) {			
-			$obj = $obj->where('uid', $uid);
+		if (UID == 1) {
+			$uid = $this->request->get('uid', 0);
+			if ($uid > 0) {			
+				$obj = $obj->where('uid', $uid);
+			}else{
+				$obj = $obj->where('uid', UID);
+			}
+		}else{
+			$obj = $obj->where('uid', UID);
 		}
         $listInfo = $obj->where(['status' => 1])->select();
 
@@ -115,7 +121,7 @@ class AppWeb extends Base {
         if ($res === false) {
             return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
         }
-
+		countNums($postData['uid'], 'AdminAppWeb');
         return $this->buildSuccess();
     }
 
@@ -160,13 +166,14 @@ class AppWeb extends Base {
             return $this->buildFailed(ReturnCode::EMPTY_PARAMS, '缺少必要参数');
         }
 
-        $has = (new AdminApp())->where(['app_group' => $hash])->count();
+        $has = (new AdminAppGroup())->where(['app_web' => $hash])->count();
         if ($has) {
-            return $this->buildFailed(ReturnCode::EMPTY_PARAMS, '当前分组存在' . $has . '个应用，禁止删除');
+            return $this->buildFailed(ReturnCode::EMPTY_PARAMS, '当前分组存在' . $has . '个应用组，禁止删除');
         }
-
+		$obj = (new AdminAppWeb())->where(['hash' => $hash])->find();
         AdminAppWeb::destroy(['hash' => $hash]);
 
+		countNums($obj['uid'], 'AdminAppWeb', [], 'dec');
         return $this->buildSuccess();
     }
 }

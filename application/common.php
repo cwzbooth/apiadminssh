@@ -72,7 +72,9 @@ function countHits($data,$type='get',$code=1) {
 	
 	$AdminList = new AdminList();
 	
-	$da['uid'] = $AdminList->where('hash', $hash)->value('uid');
+	
+	$uid =  $AdminList->where('hash', $hash)->value('uid');
+	$da['uid'] = $uid;
 	$da['api_class'] = $data['API_CONF_DETAIL']['api_class'];
 	$da['hash'] = $hash;
 	$da['group_hash'] = $group_hash;
@@ -115,7 +117,114 @@ function countHits($data,$type='get',$code=1) {
 	    return false;
 	}
 	
+	$AdminUser = new AdminUser();
+	$res = $AdminUser->where('id', $uid)->setInc('hits');
+	if ($res === false) {
+	    return false;
+	}
+	
 	return true;	
+}
+
+/**
+ * 
+ * 统计应用、接口总数据库
+ *data:请求数据
+ */
+function countNums($uid, $name, $hash=[], $type = 'inc') {
+	$app_web = isset($hash['app_web']) ? $hash['app_web']: '';
+	$app_group = isset($hash['app_group']) ? $hash['app_group']: '';
+	$app_id = isset($hash['app_id']) ? $hash['app_id']: '';
+	$group_hash = isset($hash['group_hash']) ? $hash['group_hash']: '';
+	
+	
+	switch($name) {
+		case 'AdminAppWeb':
+			if ($type == 'dec') {
+				$res =(new AdminUser())->where('id', $uid)->setDec('num_app_web');
+			}else{
+				$res =(new AdminUser())->where('id', $uid)->setInc('num_app_web');
+			}
+			if ($res === false) {
+			    return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
+			}
+		break;
+		case 'AdminAppGroup':
+			if ($type == 'dec') {
+				$res =(new AdminUser())->where('id', $uid)->setDec('num_app_web');
+				$res = (new AdminAppWeb())->where('hash', $app_web)->setDec('num_app_group');
+			}else{
+				$res =(new AdminUser())->where('id', $uid)->setInc('num_app_web');
+				$res = (new AdminAppWeb())->where('hash', $app_web)->setInc('num_app_group');
+			}
+			
+			if ($res === false) {
+			    return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
+			}
+			
+		break;
+		case 'AdminApp':
+			if ($type == 'dec') {
+				$res =(new AdminUser())->where('id', $uid)->setDec('num_app_web');
+				$res = (new AdminAppWeb())->where('hash', $app_web)->setDec('num_app');
+				$res = (new AdminAppGroup())->where('hash', $app_group)->setDec('num_app');
+				
+			}else{
+				$res =(new AdminUser())->where('id', $uid)->setInc('num_app_web');
+				$res = (new AdminAppWeb())->where('hash', $app_web)->setInc('num_app');
+				$res = (new AdminAppGroup())->where('hash', $app_group)->setInc('num_app');
+				
+			}			
+			if ($res === false) {
+			    return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
+			}
+			
+		break;
+		case 'AdminGroup':
+			if ($type == 'dec') {
+				$res =(new AdminUser())->where('id', $uid)->setDec('num_app_web');
+				$res = (new AdminAppWeb())->where('hash', $app_web)->setDec('num_interface_group');
+				$res = (new AdminAppGroup())->where('hash', $app_group)->setDec('num_interface_group');
+				$res = (new AdminApp())->where('app_id', $app_id)->setDec('num_interface_group');
+			}else{
+				$res =(new AdminUser())->where('id', $uid)->setInc('num_app_web');
+				$res = (new AdminAppWeb())->where('hash', $app_web)->setInc('num_interface_group');
+				$res = (new AdminAppGroup())->where('hash', $app_group)->setInc('num_interface_group');
+				$res = (new AdminApp())->where('app_id', $app_id)->setInc('num_interface_group');
+			}
+			
+			
+			if ($res === false) {
+			    return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
+			}
+			
+		break;
+		case 'AdminList':
+			if ($type == 'dec') {				
+				$res =(new AdminUser())->where('id', $uid)->setDec('num_app_web');
+				$res = (new AdminAppWeb())->where('hash', $app_web)->setDec('num_interface');
+				$res = (new AdminAppGroup())->where('hash', $app_group)->setDec('num_interface');
+				$res = (new AdminApp())->where('app_id', $app_id)->setDec('num_interface');			
+				$res = (new AdminGroup())->where('hash', $group_hash)->setDec('num_interface');
+			}else{				
+				$res =(new AdminUser())->where('id', $uid)->setInc('num_app_web');
+				$res = (new AdminAppWeb())->where('hash', $app_web)->setInc('num_interface');
+				$res = (new AdminAppGroup())->where('hash', $app_group)->setInc('num_interface');
+				$res = (new AdminApp())->where('app_id', $app_id)->setInc('num_interface');			
+				$res = (new AdminGroup())->where('hash', $group_hash)->setInc('num_interface');
+			}
+			if ($res === false) {
+			    return $this->buildFailed(ReturnCode::DB_SAVE_ERROR);
+			}
+			
+		break;
+		
+		default:
+		break;
+	}
+	
+	return true;
+		
 }
 
 
